@@ -73,9 +73,9 @@ main { max-width: 860px; margin: 0 auto; padding: 4vh 16px max(42vh, calc(var(--
   animation: fly .7s var(--ease) both; }
 .past { opacity: .42; }
 .past:hover { opacity: .8; }
-.current { font-family: var(--serif); font-size: clamp(2.5rem, 6vw, 4.4rem); line-height: 1.04; letter-spacing: -.01em;
+.current { font-family: var(--serif); font-size: calc(clamp(2.5rem, 6vw, 4.4rem) * var(--s, 1)); line-height: 1.04; letter-spacing: -.01em;
   max-width: 100%; padding: .1em 0 .2em; background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; margin: 4vh 0 2vh; }
-.end { font-family: var(--serif); font-style: italic; font-size: clamp(2rem, 4.6vw, 3.2rem); line-height: 1.1; background: transparent; padding-left: 0; }
+.end { font-family: var(--serif); font-style: italic; font-size: calc(clamp(2rem, 4.6vw, 3.2rem) * var(--s, 1)); line-height: 1.1; background: transparent; padding-left: 0; }
 .ctx { font-family: var(--sans); font-size: clamp(1rem, 1.7vw, 1.2rem); line-height: 1.55; letter-spacing: 0; color: var(--soft);
   max-width: 44em; margin-bottom: 1em; animation: pop .8s var(--ease) both; }
 .past .ctx { display: none; }
@@ -264,6 +264,8 @@ function render(t) {
     if (m.cls.includes('thinking')) el.innerHTML = '<span class="dots"><i></i><i></i><i></i></span><span class="shimmer">claude is thinking</span>'
     else if ((m.q && !m.q.answer) || m.key === 'end') {
       if (m.q?.context) { const c = document.createElement('div'); c.className = 'ctx'; c.textContent = m.q.context; el.append(c) }
+      // longer text, smaller type: full size up to ~60 chars, down to 55% around 240+
+      el.style.setProperty('--s', Math.max(.55, Math.min(1, 1.15 - m.text.length / 400)))
       words(el, m.text)
     }
     else el.textContent = m.text
