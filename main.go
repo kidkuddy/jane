@@ -713,7 +713,7 @@ func out(b []byte) {
 
 const help = `jane — ask the human questions in a pastel chat UI
 
-  jane new                 stdin: {"title": "...", "questions": [...]}  → {id, url}
+  jane new                 stdin: {"title": "...", "questions": [...]}  → {id, url}, opens it in the browser
   jane ask <id>            stdin: {"questions": [...]} or [...]          → add to an open thread
   jane wait <id> [--all]   block until new answers (--all: until none pending) or thread closed
   jane close <id> [note]   close the thread with an optional closing note
@@ -746,7 +746,11 @@ func main() {
 		fmt.Printf("{\"stopped\": %v}\n", ok)
 	case "new":
 		ensureServer()
-		out(api("POST", "/api/threads", stdinQuestions()))
+		b := api("POST", "/api/threads", stdinQuestions())
+		var s summary
+		json.Unmarshal(b, &s)
+		exec.Command("open", s.URL).Start() // ponytail: macOS only; xdg-open if this ever runs on linux
+		out(b)
 	case "ask":
 		ensureServer()
 		out(api("POST", "/api/threads/"+needID()+"/questions", stdinQuestions()))

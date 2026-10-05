@@ -13,7 +13,7 @@ ln -s "$PWD/skill" ~/.claude/skills/jane   # Claude Code skill
 ```
 
 ```
-jane new                 stdin: {"title": "...", "questions": [...]}  → {id, url}
+jane new                 stdin: {"title": "...", "questions": [...]}  → {id, url}, opens the page
 jane ask <id>            stdin: {"questions": [...]} or [...]
 jane wait <id> [--all]   block until new answers / all answered / closed
 jane close <id> [note]

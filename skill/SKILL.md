@@ -62,7 +62,9 @@ a new thread only for a new topic. One idea per question; lead with the question
 decides the most. Don't add your own "anything else?": jane
 appends one (id `x<n>`, default "nothing else") and keeps it last when you `ask` more.
 
-Send the user the `url` from the output in one line. Do not open it yourself.
+`jane new` opens the thread in the user's browser by itself. Don't paste the URL; say in one
+line that the questions are open in jane. `jane ask` does not reopen the page; the open tab
+picks up new questions live.
 
 ## 3. Wait for answers
 
