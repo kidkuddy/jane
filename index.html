@@ -49,7 +49,11 @@ body.is-pulse .aura { filter: blur(70px) saturate(1.6) brightness(1.4); transiti
 
 /* ---------- header ---------- */
 header { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 14px; padding: 20px clamp(16px, 4vw, 40px);
-  background: linear-gradient(var(--bg) 30%, rgba(9,8,13,0)); }
+  isolation: isolate; }
+/* frosted header: blurs what scrolls under it, fading out at the bottom edge */
+header::before { content: ""; position: absolute; z-index: -1; inset: 0 0 -24px 0;
+  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  -webkit-mask-image: linear-gradient(#000 60%, transparent); mask-image: linear-gradient(#000 60%, transparent); }
 .brand { font-family: var(--serif); font-style: italic; font-size: 2rem; line-height: 1; color: var(--ink); text-decoration: none; transition: letter-spacing .4s var(--ease); }
 .brand:hover { letter-spacing: .04em; }
 .brand::after { content: ""; display: inline-block; width: .22em; height: .22em; margin-left: .1em; border-radius: 50%; background: var(--lilac-hi); animation: glow 3s ease-in-out infinite; }
@@ -107,8 +111,7 @@ main { max-width: 860px; margin: 0 auto; padding: 4vh 16px max(42vh, calc(var(--
   backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
   -webkit-mask-image: linear-gradient(transparent, #000 90px); mask-image: linear-gradient(transparent, #000 90px); }
 @keyframes rise { from { opacity: 0; transform: translate(-50%, 40px); } }
-.card:focus-within { background: rgba(28,25,40,.8); }
-.card { position: relative; transition: background .4s; background: rgba(20,18,28,.72); border-radius: 26px; padding: 16px;
+.card { position: relative; /* no fill: blur only */ border-radius: 26px; padding: 16px;
   backdrop-filter: blur(24px) saturate(1.4); -webkit-backdrop-filter: blur(24px) saturate(1.4); }
 #chips { display: flex; flex-wrap: wrap; gap: 10px; }
 #chips:empty { display: none; }
