@@ -129,14 +129,8 @@ func addQuestions(t *Thread, raw []json.RawMessage) error {
 	if len(raw) == 0 {
 		return fail(400, "questions must be a non-empty array")
 	}
-	asked := 0
-	for _, q := range t.Questions {
-		if !q.Extra {
-			asked++
-		}
-	}
-	if asked+len(raw) > maxQuestions {
-		return fail(400, "max %d questions per thread", maxQuestions)
+	if len(raw) > maxQuestions { // per round (one new/ask call); a thread can grow without limit
+		return fail(400, "max %d questions per round", maxQuestions)
 	}
 	// The thread always ends with an optional "anything else?" so the user can add what
 	// nobody asked. While it's unanswered, new questions go in front of it.
@@ -728,7 +722,7 @@ const help = `jane — ask the human questions in a pastel chat UI
   jane serve | stop        run server in foreground | stop background server
 
 question: "plain text" or {"text", "context", "options": [..], "default", "multi": bool, "other": bool}
-limits: %d questions/thread, %d chars/question, %d chars/context, %d options of %d chars, %d chars/answer
+limits: %d questions/round (no cap per thread), %d chars/question, %d chars/context, %d options of %d chars, %d chars/answer
 env: JANE_PORT (%s), JANE_HOME (%s)
 `
 

@@ -56,8 +56,10 @@ A question is a plain string or `{"text", "context", "options", "default", "mult
 - `multi`: pick several (needs `options`). Answer comes back as an array.
 - `other: false`: only the listed options are accepted. Default `true` (free text allowed).
 
-Limits: 20 questions per thread in total, 300 chars per question, 600 chars of context. One idea per question;
-lead with the question that decides the most. Don't add your own "anything else?": jane
+Limits: 20 questions per round (one `new` or `ask` call), no cap on the thread as a whole;
+300 chars per question, 600 chars of context. Keep follow-up rounds in the same thread; open
+a new thread only for a new topic. One idea per question; lead with the question that
+decides the most. Don't add your own "anything else?": jane
 appends one (id `x<n>`, default "nothing else") and keeps it last when you `ask` more.
 
 Send the user the `url` from the output in one line. Do not open it yourself.

@@ -36,6 +36,20 @@ func TestThreadFlow(t *testing.T) {
 		t.Fatal("options must encode as [], not null")
 	}
 
+	round := func(n int) string {
+		qs := make([]string, n)
+		for i := range qs {
+			qs[i] = `"q?"`
+		}
+		return `{"questions":[` + strings.Join(qs, ",") + `]}`
+	}
+	if code, _ := do("POST", "/api/threads", round(maxQuestions+1)); code != 400 {
+		t.Fatalf("round over %d accepted: %d", maxQuestions, code)
+	}
+	_, big := do("POST", "/api/threads", round(maxQuestions))
+	if code, m := do("POST", "/api/threads/"+big["id"].(string)+"/questions", round(maxQuestions)); code != 200 {
+		t.Fatalf("second full round rejected (no per-thread cap): %d %v", code, m)
+	}
 	if code, _ := do("POST", "/api/threads", `{"questions":[{"text":"ok?","context":"`+strings.Repeat("x", maxContext+1)+`"}]}`); code != 400 {
 		t.Fatalf("over-long context accepted: %d", code)
 	}
