@@ -4,7 +4,7 @@ package main
 import (
 	"bytes"
 	"crypto/rand"
-	_ "embed"
+	"embed"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -25,6 +25,9 @@ import (
 
 //go:embed index.html
 var indexHTML []byte
+
+//go:embed fonts
+var fonts embed.FS
 
 const (
 	maxQuestions = 20
@@ -393,6 +396,7 @@ func routes() http.Handler {
 	}
 	m.HandleFunc("GET /{$}", page)
 	m.HandleFunc("GET /t/{id}", page)
+	m.Handle("GET /fonts/", http.FileServerFS(fonts))
 	m.HandleFunc("GET /api/health", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, 200, map[string]any{"ok": true, "pid": os.Getpid()})
 	})
