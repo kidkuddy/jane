@@ -20,8 +20,9 @@ jane close <id> [note]
 jane list [--all] | show <id> | serve | stop
 ```
 
-Questions: `"plain text"` or `{"text", "options", "default", "multi", "other"}`.
-Limits: 20 questions per thread, 300 chars per question, 6 options.
+Questions: `"plain text"` or `{"text", "context", "options", "default", "multi", "other"}`.
+`context` is background shown above the question, for a reader who hasn't seen the terminal.
+Limits: 20 questions per thread, 300 chars per question, 600 chars of context, 6 options.
 
 Threads persist in `~/.jane/threads/*.json`, so a later Claude session can `jane list` and
 pick an unfinished thread back up. Drafts you're typing are kept in the browser's

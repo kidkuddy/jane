@@ -32,6 +32,7 @@ var fonts embed.FS
 const (
 	maxQuestions = 20
 	maxText      = 300
+	maxContext   = 600
 	maxOptions   = 6
 	maxOption    = 80
 	maxAnswer    = 4000
@@ -65,6 +66,7 @@ type Answer struct {
 type Question struct {
 	ID        string   `json:"id"`
 	Text      string   `json:"text"`
+	Context   string   `json:"context,omitempty"` // background shown above the question
 	Options   []string `json:"options"`
 	Multi     bool     `json:"multi"`
 	Other     bool     `json:"other"`
@@ -145,6 +147,7 @@ func addQuestions(t *Thread, raw []json.RawMessage) error {
 	for _, r := range raw {
 		var in struct {
 			Text    string `json:"text"`
+			Context string `json:"context"`
 			Options []any  `json:"options"`
 			Default any    `json:"default"`
 			Multi   bool   `json:"multi"`
@@ -162,6 +165,10 @@ func addQuestions(t *Thread, raw []json.RawMessage) error {
 		if n := len([]rune(text)); n > maxText {
 			return fail(400, "question over %d chars (%d): %q", maxText, n, string([]rune(text)[:40])+"…")
 		}
+		ctx := strings.TrimSpace(in.Context)
+		if n := len([]rune(ctx)); n > maxContext {
+			return fail(400, "context over %d chars (%d)", maxContext, n)
+		}
 		opts := toStrings(in.Options)
 		if len(opts) > maxOptions {
 			return fail(400, "max %d options per question", maxOptions)
@@ -175,7 +182,7 @@ func addQuestions(t *Thread, raw []json.RawMessage) error {
 			return fail(400, "multi needs options")
 		}
 		q := &Question{
-			ID: fmt.Sprintf("q%d", len(t.Questions)+len(add)+1), Text: text, Options: opts, Multi: in.Multi,
+			ID: fmt.Sprintf("q%d", len(t.Questions)+len(add)+1), Text: text, Context: ctx, Options: opts, Multi: in.Multi,
 			Other: in.Other == nil || *in.Other || len(opts) == 0,
 		}
 		if d := toStrings(in.Default); len(d) > 0 {
@@ -720,8 +727,8 @@ const help = `jane — ask the human questions in a pastel chat UI
   jane show <id>           full thread JSON
   jane serve | stop        run server in foreground | stop background server
 
-question: "plain text" or {"text", "options": [..], "default", "multi": bool, "other": bool}
-limits: %d questions/thread, %d chars/question, %d options of %d chars, %d chars/answer
+question: "plain text" or {"text", "context", "options": [..], "default", "multi": bool, "other": bool}
+limits: %d questions/thread, %d chars/question, %d chars/context, %d options of %d chars, %d chars/answer
 env: JANE_PORT (%s), JANE_HOME (%s)
 `
 
@@ -792,6 +799,6 @@ func main() {
 		ensureServer()
 		out(api("GET", "/api/threads/"+needID(), nil))
 	default:
-		fmt.Printf(help, maxQuestions, maxText, maxOptions, maxOption, maxAnswer, port, home)
+		fmt.Printf(help, maxQuestions, maxText, maxContext, maxOptions, maxOption, maxAnswer, port, home)
 	}
 }

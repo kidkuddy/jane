@@ -36,6 +36,9 @@ func TestThreadFlow(t *testing.T) {
 		t.Fatal("options must encode as [], not null")
 	}
 
+	if code, _ := do("POST", "/api/threads", `{"questions":[{"text":"ok?","context":"`+strings.Repeat("x", maxContext+1)+`"}]}`); code != 400 {
+		t.Fatalf("over-long context accepted: %d", code)
+	}
 	if code, m := do("POST", "/api/threads", `{"questions":["`+strings.Repeat("x", maxText+1)+`"]}`); code != 400 {
 		t.Fatalf("over-long question accepted: %d %v", code, m)
 	}

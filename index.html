@@ -75,6 +75,10 @@ main { max-width: 860px; margin: 0 auto; padding: 4vh 16px 42vh; }
 .current { font-family: var(--serif); font-size: clamp(2.5rem, 6vw, 4.4rem); line-height: 1.04; letter-spacing: -.01em;
   max-width: 100%; padding: .1em 0 .2em; background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; margin: 4vh 0 2vh; }
 .end { font-family: var(--serif); font-style: italic; font-size: clamp(2rem, 4.6vw, 3.2rem); line-height: 1.1; background: transparent; padding-left: 0; }
+.ctx { font-family: var(--sans); font-size: clamp(1rem, 1.7vw, 1.2rem); line-height: 1.55; letter-spacing: 0; color: var(--soft);
+  max-width: 44em; margin-bottom: 1em; animation: pop .8s var(--ease) both; }
+.past .ctx { display: none; }
+.typing .ctx { visibility: hidden; }
 .w { display: inline-block; animation: word .9s var(--ease) both; animation-delay: calc(var(--i) * 38ms); }
 @keyframes word { from { opacity: 0; transform: translateY(.4em) rotate(2deg); filter: blur(10px); } }
 @keyframes pop { from { opacity: 0; transform: translateY(18px) scale(.97); filter: blur(10px); } }
@@ -253,7 +257,10 @@ function render(t) {
     const el = document.createElement('div')
     el.className = 'msg ' + m.cls
     if (m.cls.includes('thinking')) el.innerHTML = '<span class="dots"><i></i><i></i><i></i></span><span class="shimmer">claude is thinking</span>'
-    else if ((m.q && !m.q.answer) || m.key === 'end') words(el, m.text)
+    else if ((m.q && !m.q.answer) || m.key === 'end') {
+      if (m.q?.context) { const c = document.createElement('div'); c.className = 'ctx'; c.textContent = m.q.context; el.append(c) }
+      words(el, m.text)
+    }
     else el.textContent = m.text
     chat.append(el); shown.set(m.key, el)
     if (m.q && !firstRender) { // fake typing beat before a fresh question appears

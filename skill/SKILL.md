@@ -22,21 +22,41 @@ transcript, then `jane wait <id>`) instead of opening a new one.
 
 ```bash
 jane new <<'EOF'
-{"title": "auth flow for the dashboard", "questions": [
-  {"text": "Which login methods do we need?", "options": ["email + password", "Google", "magic link"], "multi": true, "default": ["email + password"]},
-  {"text": "Should sessions survive a browser restart?", "options": ["yes", "no"], "default": "yes"},
-  "Anything about the current login that annoys you?"
+{"title": "login options for the admin dashboard", "questions": [
+  {"context": "The admin dashboard (dashboard/) has no login yet; anyone with the URL gets in. I'm adding auth before it goes public.", "text": "Which login methods should the admin dashboard support?", "options": ["email + password", "Google", "magic link"], "multi": true, "default": ["email + password"]},
+  {"context": "After logging in, the dashboard keeps a session cookie. If it outlives the browser, admins stay logged in for 30 days; if not, they log in again every time they reopen the browser.", "text": "Should admins stay logged in after closing the browser?", "options": ["yes, for 30 days", "no, log in every time"], "default": "yes, for 30 days"}
 ]}
 EOF
 ```
 
-A question is a plain string or `{"text", "options", "default", "multi", "other"}`.
+### Write for someone who hasn't seen the terminal
+
+The user reads jane cold, often minutes or hours later, without the conversation in front
+of them. Every question must stand on its own:
+
+- Name the thing. Not "what should we do with X?" but what X is, where it lives, and what
+  is wrong or undecided about it.
+- Say what's at stake: what each option changes, what breaks if they pick wrong.
+- Put that background in `context` (up to 600 chars, shown as a paragraph above the
+  question) and keep `text` to the actual question.
+- No pronouns or labels that only make sense in the terminal ("the second approach",
+  "that bug", "option B", "the file I mentioned").
+- Options are full phrases a newcomer understands, not shorthand.
+
+Test before sending: could someone who opened only this URL answer it? If not, add context.
+
+Bad:  `{"text": "Should I keep the retry in the wrapper?"}`
+Good: `{"context": "Uploads to S3 sometimes fail with a timeout. I added a retry around the upload call in storage/upload.go. It retries 3 times with a 2s wait, so a dead connection now takes 6s to report an error.", "text": "Keep the automatic retry on S3 uploads?", "options": ["keep it, 6s is fine", "keep it but only 1 retry", "remove it, fail fast"]}`
+
+### Question format
+
+A question is a plain string or `{"text", "context", "options", "default", "multi", "other"}`.
 - `options`: up to 6 choices, 80 chars each. Clicking one answers immediately.
 - `default`: what Enter on an empty answer sends. Give one whenever a sensible default exists.
 - `multi`: pick several (needs `options`). Answer comes back as an array.
 - `other: false`: only the listed options are accepted. Default `true` (free text allowed).
 
-Limits: 20 questions per thread in total, 300 chars per question. One idea per question;
+Limits: 20 questions per thread in total, 300 chars per question, 600 chars of context. One idea per question;
 lead with the question that decides the most. Don't add your own "anything else?": jane
 appends one (id `x<n>`, default "nothing else") and keeps it last when you `ask` more.
 
