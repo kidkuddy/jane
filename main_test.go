@@ -71,6 +71,16 @@ func TestThreadFlow(t *testing.T) {
 	if code, _ := do("POST", "/api/threads/"+id+"/questions", `{"questions":["more?"]}`); code != 409 {
 		t.Fatalf("asked on closed thread: %d", code)
 	}
+	evil, _ := http.NewRequest("POST", srv.URL+"/api/threads", strings.NewReader(`{"questions":["x"]}`))
+	evil.Header.Set("Origin", "https://evil.example")
+	if res, _ := http.DefaultClient.Do(evil); res.StatusCode != 403 {
+		t.Fatalf("cross-origin POST allowed: %d", res.StatusCode)
+	}
+	rebind, _ := http.NewRequest("GET", srv.URL+"/api/threads", nil)
+	rebind.Host = "evil.example"
+	if res, _ := http.DefaultClient.Do(rebind); res.StatusCode != 403 {
+		t.Fatalf("foreign Host allowed: %d", res.StatusCode)
+	}
 	if code, _ := do("GET", "/api/threads/..%2f..%2fetc/wait", ""); code != 404 {
 		t.Fatalf("bad id: %d", code)
 	}

@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
@@ -300,10 +301,10 @@ func load(id string) (*Thread, error) {
 func save(t *Thread) error {
 	t.UpdatedAt = now()
 	b, _ := json.MarshalIndent(t, "", "  ")
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return err
 	}
-	if err := os.WriteFile(file(t.ID)+".tmp", b, 0o644); err != nil {
+	if err := os.WriteFile(file(t.ID)+".tmp", b, 0o600); err != nil {
 		return err
 	}
 	if err := os.Rename(file(t.ID)+".tmp", file(t.ID)); err != nil {
@@ -384,7 +385,7 @@ func newID() string {
 	return hex.EncodeToString(b)
 }
 
-func routes() *http.ServeMux {
+func routes() http.Handler {
 	m := http.NewServeMux()
 	page := func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("content-type", "text/html; charset=utf-8")
@@ -560,7 +561,23 @@ func routes() *http.ServeMux {
 		}
 		return nil
 	}))
-	return m
+	return guard(m)
+}
+
+// guard keeps other websites in your browser out: the Host must be ours (blocks DNS
+// rebinding) and a browser request must come from our own page (blocks CSRF, which could
+// otherwise post fake answers into a Claude session). The CLI sends no Origin.
+func guard(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, p, _ := net.SplitHostPort(r.Context().Value(http.LocalAddrContextKey).(net.Addr).String())
+		ours := map[string]bool{"localhost:" + p: true, "127.0.0.1:" + p: true}
+		o := r.Header.Get("Origin")
+		if !ours[r.Host] || (o != "" && !ours[strings.TrimPrefix(o, "http://")]) {
+			writeJSON(w, 403, map[string]string{"error": "forbidden"})
+			return
+		}
+		h.ServeHTTP(w, r)
+	})
 }
 
 func serve() {
@@ -626,8 +643,8 @@ func ensureServer() {
 	if _, ok := health(); ok {
 		return
 	}
-	os.MkdirAll(home, 0o755)
-	log, err := os.OpenFile(filepath.Join(home, "server.log"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+	os.MkdirAll(home, 0o700)
+	log, err := os.OpenFile(filepath.Join(home, "server.log"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o600)
 	if err != nil {
 		die("%v", err)
 	}
