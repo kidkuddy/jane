@@ -28,7 +28,7 @@ func TestThreadFlow(t *testing.T) {
 	}
 
 	code, th := do("POST", "/api/threads", `{"title":"t","questions":["name?",{"text":"color?","options":["red","blue"],"default":"blue","other":false}]}`)
-	if code != 201 || th["pending"] != 2.0 {
+	if code != 201 || th["pending"] != 3.0 { // 2 + trailing "anything else?"
 		t.Fatalf("create: %d %v", code, th)
 	}
 	id := th["id"].(string)
@@ -52,7 +52,7 @@ func TestThreadFlow(t *testing.T) {
 		t.Fatalf("answer: %d %v", code, m)
 	}
 	m := <-got
-	if a := m["answers"].([]any); len(a) != 1 || a[0].(map[string]any)["answer"] != "jane" || m["pending"] != 1.0 {
+	if a := m["answers"].([]any); len(a) != 1 || a[0].(map[string]any)["answer"] != "jane" || m["pending"] != 2.0 {
 		t.Fatalf("wait result: %v", m)
 	}
 
@@ -60,8 +60,19 @@ func TestThreadFlow(t *testing.T) {
 		t.Fatalf("off-list answer accepted with other=false: %d", code)
 	}
 	do("POST", "/api/threads/"+id+"/answer", `{"qid":"q2","value":""}`) // empty → default
-	if _, m := do("GET", "/api/threads/"+id+"/wait?all", ""); m["answers"].([]any)[0].(map[string]any)["answer"] != "blue" {
-		t.Fatalf("default not applied / not delivered: %v", m)
+
+	// follow-ups land in front of the unanswered "anything else?", which stays last
+	do("POST", "/api/threads/"+id+"/questions", `{"questions":["why blue?"]}`)
+	_, full := do("GET", "/api/threads/"+id, "")
+	qs := full["questions"].([]any)
+	if len(qs) != 4 || qs[2].(map[string]any)["text"] != "why blue?" || qs[3].(map[string]any)["extra"] != true {
+		t.Fatalf("anything-else not kept last: %v", qs)
+	}
+	do("POST", "/api/threads/"+id+"/answer", `{"qid":"q3","value":"calm"}`)
+	do("POST", "/api/threads/"+id+"/answer", `{"qid":"x4","value":""}`)
+	if _, m := do("GET", "/api/threads/"+id+"/wait?all", ""); len(m["answers"].([]any)) != 3 ||
+		m["answers"].([]any)[0].(map[string]any)["answer"] != "blue" || m["answers"].([]any)[2].(map[string]any)["answer"] != "nothing else" {
+		t.Fatalf("defaults not applied / not delivered: %v", m)
 	}
 
 	do("POST", "/api/threads/"+id+"/close", `{"note":"bye"}`)

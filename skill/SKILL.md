@@ -37,7 +37,8 @@ A question is a plain string or `{"text", "options", "default", "multi", "other"
 - `other: false`: only the listed options are accepted. Default `true` (free text allowed).
 
 Limits: 20 questions per thread in total, 300 chars per question. One idea per question;
-lead with the question that decides the most.
+lead with the question that decides the most. Don't add your own "anything else?": jane
+appends one (id `x<n>`, default "nothing else") and keeps it last when you `ask` more.
 
 Send the user the `url` from the output in one line. Do not open it yourself.
 

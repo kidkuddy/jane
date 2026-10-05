@@ -71,6 +71,7 @@ type Question struct {
 	Default   any      `json:"default"`
 	Answer    *Answer  `json:"answer"`
 	Delivered bool     `json:"delivered"`
+	Extra     bool     `json:"extra,omitempty"` // the trailing "anything else?"
 }
 
 type Thread struct {
@@ -126,8 +127,19 @@ func addQuestions(t *Thread, raw []json.RawMessage) error {
 	if len(raw) == 0 {
 		return fail(400, "questions must be a non-empty array")
 	}
-	if len(t.Questions)+len(raw) > maxQuestions {
+	asked := 0
+	for _, q := range t.Questions {
+		if !q.Extra {
+			asked++
+		}
+	}
+	if asked+len(raw) > maxQuestions {
 		return fail(400, "max %d questions per thread", maxQuestions)
+	}
+	// The thread always ends with an optional "anything else?" so the user can add what
+	// nobody asked. While it's unanswered, new questions go in front of it.
+	if n := len(t.Questions); n > 0 && t.Questions[n-1].Extra && t.Questions[n-1].Answer == nil {
+		t.Questions = t.Questions[:n-1]
 	}
 	var add []*Question
 	for _, r := range raw {
@@ -176,6 +188,10 @@ func addQuestions(t *Thread, raw []json.RawMessage) error {
 		add = append(add, q)
 	}
 	t.Questions = append(t.Questions, add...)
+	t.Questions = append(t.Questions, &Question{
+		ID: fmt.Sprintf("x%d", len(t.Questions)+1), Text: "Anything else?", Options: []string{},
+		Other: true, Default: "nothing else", Extra: true,
+	})
 	return nil
 }
 
