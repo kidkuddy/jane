@@ -60,7 +60,8 @@ header { position: sticky; top: 0; z-index: 2; display: flex; align-items: cente
 #progress { font-size: .85rem; color: var(--dim); font-variant-numeric: tabular-nums; }
 #bar { position: absolute; left: 0; bottom: 0; height: 2px; width: 0; background: linear-gradient(90deg, var(--lilac), var(--lilac-hi), var(--lilac-hi)); transition: width .9s var(--ease); }
 
-main { max-width: 860px; margin: 0 auto; padding: 4vh 16px 42vh; }
+main { max-width: 860px; margin: 0 auto; padding: 4vh 16px max(42vh, calc(var(--composer-h, 0px) + 10vh)); }
+.current { scroll-margin: 90px 0 calc(var(--composer-h, 0px) + 28px); }
 
 /* ---------- messages ---------- */
 .msg { width: fit-content; max-width: 86%; margin: 14px 0; padding: .6em 1em; border-radius: 1.2em; line-height: 1.3;
@@ -99,9 +100,13 @@ main { max-width: 860px; margin: 0 auto; padding: 4vh 16px 42vh; }
 
 /* ---------- composer ---------- */
 #composer { position: fixed; left: 50%; bottom: 0; transform: translateX(-50%); width: min(860px, 100%); padding: 0 16px 22px; z-index: 3;
-  animation: rise .8s var(--ease) both; }
+  animation: rise .8s var(--ease) backwards; } /* no fill: a lingering filter would disable the backdrop blur */
 #composer[hidden] { display: none; }
-@keyframes rise { from { opacity: 0; transform: translate(-50%, 40px); filter: blur(6px); } }
+/* frosted band behind the composer so long text scrolling underneath blurs out instead of showing through */
+#composer::before { content: ""; position: absolute; z-index: -1; left: 50%; top: -90px; bottom: 0; width: 100vw; transform: translateX(-50%);
+  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); background: linear-gradient(rgba(9,8,13,0), rgba(9,8,13,.55) 90px);
+  -webkit-mask-image: linear-gradient(transparent, #000 90px); mask-image: linear-gradient(transparent, #000 90px); }
+@keyframes rise { from { opacity: 0; transform: translate(-50%, 40px); } }
 .card:focus-within { background: rgba(28,25,40,.8); }
 .card { position: relative; transition: background .4s; background: rgba(20,18,28,.72); border-radius: 26px; padding: 16px;
   backdrop-filter: blur(24px) saturate(1.4); -webkit-backdrop-filter: blur(24px) saturate(1.4); }
@@ -277,7 +282,11 @@ function render(t) {
   const q = last.q || null
   if (q?.id !== current?.id) compose(q)
   if (t.status !== 'open') { store.del('jane:' + t.id) }
-  requestAnimationFrame(() => shown.get(last.key).scrollIntoView({ behavior: 'smooth', block: 'center' }))
+  requestAnimationFrame(() => {
+    syncComposer() // the ResizeObserver fires after this frame; scroll needs the height now
+    // a question sits right above the composer (scroll-margin-bottom); long context may scroll up under the header
+    shown.get(last.key).scrollIntoView({ behavior: 'smooth', block: last.q ? 'end' : 'center' })
+  })
   if (document.hidden && q) document.title = '● ' + document.title
 }
 
@@ -352,6 +361,8 @@ async function submit(v = value()) {
   } catch (e) { toast(e.message); if (current === q) { form.hidden = false; update() } } finally { busy = false }
 }
 
+const syncComposer = () => document.documentElement.style.setProperty('--composer-h', form.offsetHeight + 'px')
+new ResizeObserver(syncComposer).observe(form)
 form.onsubmit = e => { e.preventDefault(); submit() }
 input.oninput = () => { grow(); saveDraft(); update() }
 input.onkeydown = e => {
